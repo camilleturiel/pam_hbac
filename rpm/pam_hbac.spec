@@ -11,7 +11,7 @@ Summary:	A PAM module that evaluates HBAC rules stored on an IPA server
 
 License:	GPLv3+
 URL:		https://github.com/jhrozek/pam_hbac
-Source0:	https://github.com/jhrozek/pam_hbac/archive/1.2.tar.gz
+Source0:	%{name}-%{version}.tar.gz
 
 BuildRequires:	autoconf
 BuildRequires:	automake
