@@ -41,7 +41,8 @@ AC_DEFUN([AM_CHECK_OPENLDAP],
     dnl dependency list incrementally, then use AC_TRY_LINK (which
     dnl does not cache) to test ldap_initialize with all of them.
     LDAP_EXTRA_LIBS=""
-    AC_CHECK_LIB(lber, ber_pvt_opt_on,
+    dnl ber_pvt_opt_on was removed in OpenLDAP 2.6.x; use ber_alloc_t instead
+    AC_CHECK_LIB(lber, ber_alloc_t,
                  [LDAP_EXTRA_LIBS="$LDAP_EXTRA_LIBS -llber"])
     AC_CHECK_LIB(sasl2, sasl_client_init,
                  [LDAP_EXTRA_LIBS="$LDAP_EXTRA_LIBS -lsasl2"])
