@@ -38,7 +38,10 @@ git ls-files --deleted  | xargs git checkout
 #                  **** Set up compiler and flags   ****
 #  The following lines are from README.AIX
 export M4=/usr/opt/freeware/bin/m4
-export LDFLAGS="-L/usr/lib"
+# /opt/freeware/lib MUST come before /usr/lib so the linker finds
+# OpenLDAP 2.6.x (in /opt/freeware/lib) before any old system LDAP
+# library that may exist in /usr/lib.
+export LDFLAGS="-L/opt/freeware/lib -L/usr/lib"
 export LIBS="-lpthread"
 
 # Compiler specific section
@@ -46,12 +49,10 @@ if [ -z "$gcc_f" ]; then #(not GCC)
   export PATH=/opt/IBM/openxlC/17.1.2/bin/:/opt/IBM/openxlC/17.1.1/bin/:$PATH # ibm-clang compiler
   export CC=ibm-clang
   export CFLAGS="-DSYSV -D${aix_define} -D_ALL_SOURCE -DFUNCPROTO=15 -Wno-error=int-conversion -O2"
-  export LDFLAGS="${LDFLAGS} -L/opt/freeware/lib"   #Needed for libglib-2.0.a, perhaps more
   export CFLAGS="${CFLAGS} -I/opt/freeware/include  -target powerpc-ibm-aix${aix_ver}.0.0"
 else
   export CC=gcc #normally picked up "automatically"
   export CFLAGS="-Wno-implicit-function-declaration"
-  export LDFLAGS="${LDFLAGS}  -L/opt/freeware/lib " #Cleans up pathnames like  /opt/freeware/lib/gcc/powerpc-ibm-aix7.3.0.0/10/../../../
 fi
 #export LDFLAGS=" -L/put/front ${LDFLAGS}" # If needed for somewhere to place libraries "in front" in search path
 
