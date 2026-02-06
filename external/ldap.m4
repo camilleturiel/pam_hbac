@@ -73,28 +73,17 @@ AC_DEFUN([AM_CHECK_OPENLDAP],
             Check config.log for details.])
     fi
 
-    dnl Link libldap.a and liblber.a statically by full path so that
-    dnl pam_hbac.so does not depend on a runtime -lldap/-llber resolution
-    dnl (which could pick up the wrong library, e.g. IBM LDAP in /usr/lib).
+    dnl Link libldap and liblber statically into pam_hbac.so so there is
+    dnl no runtime dependency on them (avoids picking up the wrong library,
+    dnl e.g. IBM LDAP in /usr/lib).
+    dnl On AIX, .a archives contain shared object members, so passing the
+    dnl full path alone is not enough. Use -bstatic/-bdynamic to force the
+    dnl AIX linker to bind the code at link time.
     dnl The remaining transitive dependencies (sasl2, ssl, crypto) stay dynamic.
-    OPENLDAP_STATIC=""
-    if test -f "${OPENLDAP_LIBDIR}/libldap.a"; then
-        OPENLDAP_STATIC="${OPENLDAP_LIBDIR}/libldap.a"
-    fi
-    if test -f "${OPENLDAP_LIBDIR}/liblber.a"; then
-        OPENLDAP_STATIC="${OPENLDAP_STATIC} ${OPENLDAP_LIBDIR}/liblber.a"
-    fi
-
-    dnl Remove -llber from LDAP_EXTRA_LIBS since liblber.a is linked statically
     LDAP_DYNAMIC_LIBS=`echo "$LDAP_EXTRA_LIBS" | sed 's/-llber//g'`
 
-    if test -n "$OPENLDAP_STATIC"; then
-        OPENLDAP_LIBS="${OPENLDAP_STATIC} ${LDAP_DYNAMIC_LIBS}"
-        AC_MSG_NOTICE([Linking libldap/liblber statically from ${OPENLDAP_LIBDIR}])
-    else
-        OPENLDAP_LIBS="-L${OPENLDAP_LIBDIR} -lldap ${LDAP_EXTRA_LIBS}"
-        AC_MSG_NOTICE([Linking libldap/liblber dynamically])
-    fi
+    OPENLDAP_LIBS="-L${OPENLDAP_LIBDIR} -Wl,-bstatic -lldap -llber -Wl,-bdynamic ${LDAP_DYNAMIC_LIBS}"
+    AC_MSG_NOTICE([Linking libldap/liblber statically from ${OPENLDAP_LIBDIR}])
 
     LIBS="$LIBS $OPENLDAP_LIBS"
     AC_CHECK_FUNCS([ldap_start_tls])
