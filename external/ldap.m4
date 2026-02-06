@@ -1,4 +1,4 @@
-dnl check for LDAP libraries
+dnl check for OpenLDAP 2.6.x libraries
 AC_DEFUN([AM_CHECK_OPENLDAP],
 [
     for p in /usr/include/openldap /usr/local/include /opt/freeware/include; do
@@ -29,36 +29,19 @@ AC_DEFUN([AM_CHECK_OPENLDAP],
                     #endif
                     ])
 
-    AC_CHECK_LIB(ldap, ldap_search, with_ldap=yes)
-    dnl OpenLDAP 2.4.x used libldap-2.4; OpenLDAP 2.6.x uses plain libldap
-    AC_CHECK_LIB(ldap-2.4, ldap_initialize, with_ldap_two_four=yes)
-    dnl Check for other libraries we need to link with to get the main routines.
-    test "$with_ldap" != "yes" && { AC_CHECK_LIB(ldap, ldap_open, [with_ldap=yes with_ldap_lber=yes], , -llber) }
-    test "$with_ldap_lber" != "yes" && { AC_CHECK_LIB(lber, ber_pvt_opt_on, with_ldap_lber=yes) }
+    AC_CHECK_LIB(ldap, ldap_initialize, with_ldap=yes)
+    if test "$with_ldap" != "yes"; then
+        AC_MSG_ERROR([OpenLDAP 2.6.x libraries not found (requires ldap_initialize)])
+    fi
+    OPENLDAP_LIBS="${OPENLDAP_LIBS} -lldap"
 
-    if test "$with_ldap" = "yes"; then
-        if test "$with_ldap_lber" = "yes" ; then
-            OPENLDAP_LIBS="${OPENLDAP_LIBS} -llber"
-        fi
-        if test "$with_ldap_two_four" = "yes" ; then
-            OPENLDAP_LIBS="${OPENLDAP_LIBS} -lldap-2.4"
-        else
-            OPENLDAP_LIBS="${OPENLDAP_LIBS} -lldap"
-        fi
-    else
-        AC_MSG_ERROR([LDAP libraries not found])
+    AC_CHECK_LIB(lber, ber_pvt_opt_on, with_ldap_lber=yes)
+    if test "$with_ldap_lber" = "yes" ; then
+        OPENLDAP_LIBS="${OPENLDAP_LIBS} -llber"
     fi
 
     LIBS="$LIBS $OPENLDAP_LIBS"
-    AC_CHECK_FUNCS([ldap_initialize ldap_start_tls ldap_str2dn ldap_dnfree ldapssl_client_init])
-
-    dnl OpenLDAP 2.6.x removed ldap_str2dn/ldap_dnfree functions but still
-    dnl defines the LDAPAVA/LDAPRDN/LDAPDN types in <ldap.h>. Check for the
-    dnl type so we don't redefine it when the header already provides it.
-    AC_CHECK_TYPES([LDAPAVA],,,[
-        #include <lber.h>
-        #include <ldap.h>
-    ])
+    AC_CHECK_FUNCS([ldap_start_tls])
 
     CFLAGS=$SAVE_CFLAGS
     LIBS=$SAVE_LIBS

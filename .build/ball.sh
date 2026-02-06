@@ -50,9 +50,6 @@ if [ -z "$gcc_f" ]; then #(not GCC)
   export CFLAGS="${CFLAGS} -I/opt/freeware/include  -target powerpc-ibm-aix${aix_ver}.0.0"
 else
   export CC=gcc #normally picked up "automatically"
-  # Do not hard-code -DHAVE_LDAP_STR2DN; let configure detect LDAP capabilities.
-  # OpenLDAP 2.6.x removed ldap_str2dn/ldap_dnfree; the built-in fallback
-  # in pam_hbac_ldap_compat.c will be used automatically when not detected.
   export CFLAGS="-Wno-implicit-function-declaration"
   export LDFLAGS="${LDFLAGS}  -L/opt/freeware/lib " #Cleans up pathnames like  /opt/freeware/lib/gcc/powerpc-ibm-aix7.3.0.0/10/../../../
 fi

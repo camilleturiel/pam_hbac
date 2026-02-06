@@ -197,8 +197,6 @@ dnparse_compat_tests_SOURCES = \
 dnparse_compat_tests_CFLAGS = \
 	$(AM_CFLAGS) \
 	$(CMOCKA_CFLAGS) \
-	-DCOMPAT_LDAP_UNIT_TESTS \
-	-DLDAP_DEPRECATED \
 	$(NULL)
 dnparse_compat_tests_LDADD = \
 	$(OPENLDAP_LIBS) \
