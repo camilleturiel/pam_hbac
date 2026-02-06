@@ -35,16 +35,29 @@ AC_DEFUN([AM_CHECK_OPENLDAP],
                     #endif
                     ])
 
-    AC_CHECK_LIB(ldap, ldap_initialize, with_ldap=yes)
+    dnl Check lber first -- on AIX the linker is strict and libldap depends
+    dnl on liblber (and possibly libssl/libcrypto), so the ldap link test
+    dnl needs these as extra dependencies.
+    LDAP_EXTRA_LIBS=""
+    AC_CHECK_LIB(lber, ber_pvt_opt_on, [LDAP_EXTRA_LIBS="-llber"])
+
+    dnl Try linking ldap_initialize with its dependencies
+    AC_CHECK_LIB(ldap, ldap_initialize,
+                 [with_ldap=yes],
+                 [with_ldap=no],
+                 [$LDAP_EXTRA_LIBS])
+    if test "$with_ldap" != "yes"; then
+        dnl AIX may also need -lssl -lcrypto for the link test to succeed
+        AC_CHECK_LIB(ldap, ldap_initialize,
+                     [with_ldap=yes; LDAP_EXTRA_LIBS="$LDAP_EXTRA_LIBS -lssl -lcrypto"],
+                     [],
+                     [$LDAP_EXTRA_LIBS -lssl -lcrypto])
+    fi
     if test "$with_ldap" != "yes"; then
         AC_MSG_ERROR([OpenLDAP 2.6.x libraries not found (requires ldap_initialize)])
     fi
-    OPENLDAP_LIBS="${OPENLDAP_LIBS} -lldap"
 
-    AC_CHECK_LIB(lber, ber_pvt_opt_on, with_ldap_lber=yes)
-    if test "$with_ldap_lber" = "yes" ; then
-        OPENLDAP_LIBS="${OPENLDAP_LIBS} -llber"
-    fi
+    OPENLDAP_LIBS="${OPENLDAP_LIBS} -lldap ${LDAP_EXTRA_LIBS}"
 
     LIBS="$LIBS $OPENLDAP_LIBS"
     AC_CHECK_FUNCS([ldap_start_tls])
