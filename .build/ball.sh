@@ -61,6 +61,7 @@ echo "Target:   AIX ${aix_ver}   ***********************************************
 
 autoupdate
 autoreconf -if|tee autoreconf.mlog
+rm -f config.cache
 echo "***************** C O N F I G U R E **********************************************"
  # From README.AIX - --with-pammoddir is not in the previous README of this project.
 ./configure --sysconfdir=/etc/security/ldap \

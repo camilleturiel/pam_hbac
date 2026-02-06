@@ -41,18 +41,33 @@ AC_DEFUN([AM_CHECK_OPENLDAP],
     LDAP_EXTRA_LIBS=""
     AC_CHECK_LIB(lber, ber_pvt_opt_on, [LDAP_EXTRA_LIBS="-llber"])
 
-    dnl Try linking ldap_initialize with its dependencies
-    AC_CHECK_LIB(ldap, ldap_initialize,
-                 [with_ldap=yes],
-                 [with_ldap=no],
-                 [$LDAP_EXTRA_LIBS])
+    dnl Try linking ldap_initialize with its dependencies.
+    dnl Use AC_TRY_LINK instead of AC_CHECK_LIB to avoid caching issues
+    dnl when retrying with different dependency sets.
+    with_ldap=no
+
+    dnl First try: -lldap + lber
+    AC_MSG_CHECKING([for ldap_initialize in -lldap])
+    SAVE_LIBS2=$LIBS
+    LIBS="$LIBS -lldap $LDAP_EXTRA_LIBS"
+    AC_TRY_LINK([#include <ldap.h>],
+                [ldap_initialize(0, 0);],
+                [with_ldap=yes; AC_MSG_RESULT([yes])],
+                [AC_MSG_RESULT([no])])
+    LIBS=$SAVE_LIBS2
+
+    dnl Second try: also add -lssl -lcrypto (OpenLDAP built with TLS)
     if test "$with_ldap" != "yes"; then
-        dnl AIX may also need -lssl -lcrypto for the link test to succeed
-        AC_CHECK_LIB(ldap, ldap_initialize,
-                     [with_ldap=yes; LDAP_EXTRA_LIBS="$LDAP_EXTRA_LIBS -lssl -lcrypto"],
-                     [],
-                     [$LDAP_EXTRA_LIBS -lssl -lcrypto])
+        AC_MSG_CHECKING([for ldap_initialize in -lldap (with -lssl -lcrypto)])
+        SAVE_LIBS2=$LIBS
+        LIBS="$LIBS -lldap $LDAP_EXTRA_LIBS -lssl -lcrypto"
+        AC_TRY_LINK([#include <ldap.h>],
+                    [ldap_initialize(0, 0);],
+                    [with_ldap=yes; LDAP_EXTRA_LIBS="$LDAP_EXTRA_LIBS -lssl -lcrypto"; AC_MSG_RESULT([yes])],
+                    [AC_MSG_RESULT([no])])
+        LIBS=$SAVE_LIBS2
     fi
+
     if test "$with_ldap" != "yes"; then
         AC_MSG_ERROR([OpenLDAP 2.6.x libraries not found (requires ldap_initialize)])
     fi
