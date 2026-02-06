@@ -150,7 +150,7 @@ extern int _getgroupsbymember(const char *, gid_t[], int, int);
 #define LDAP_OPT_SSL 0x0A
 #endif
 
-#if !defined(HAVE_LDAP_STR2DN) || defined(COMPAT_UNIT_TESTING)
+#if !defined(HAVE_LDAP_STR2DN) || defined(COMPAT_LDAP_UNIT_TESTS)
 typedef struct ldap_ava {
     struct berval la_attr;
     struct berval la_value;
