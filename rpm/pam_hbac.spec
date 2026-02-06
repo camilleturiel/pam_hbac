@@ -9,11 +9,6 @@ Version:	1.2
 Release:	1%{?dist}
 Summary:	A PAM module that evaluates HBAC rules stored on an IPA server
 
-%if 0%{?rhel} < 6
-Group:          System Environment/Base
-BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root
-%endif
-
 License:	GPLv3+
 URL:		https://github.com/jhrozek/pam_hbac
 Source0:	https://github.com/jhrozek/pam_hbac/archive/1.2.tar.gz
@@ -28,17 +23,6 @@ BuildRequires:	gettext-devel
 BuildRequires:	pam-devel
 BuildRequires:	openldap-devel
 BuildRequires:	glib2-devel
-
-# asciidoc is only in EPEL-5 but since pam_hbac is not in RHEL-5 either,
-# it's probably OK
-BuildRequires:	asciidoc
-
-# EPEL-5's asciidoc has broken dependencies and would error out unless
-# xsltproc and docbook-styles are installed
-%if 0%{?rhel} == 5
-BuildRequires:  libxslt
-BuildRequires:  docbook-style-xsl
-%endif
 
 
 %description
@@ -55,6 +39,7 @@ for environments that can't use SSSD for some reason.
 autoreconf -if
 %configure --libdir=/%{security_parent_dir} \
            --with-pammoddir=/%{security_parent_dir}/security \
+           --disable-man-pages \
            ${null}
 
 make %{?_smp_mflags}
@@ -69,8 +54,6 @@ rm -f $RPM_BUILD_ROOT/%{security_parent_dir}/security/*.la
 %defattr(-,root,root,-)
 %doc README* COPYING* ChangeLog NEWS
 %{security_parent_dir}/security/pam_hbac.so
-%{_mandir}/man5/pam_hbac.conf.5*
-%{_mandir}/man8/pam_hbac.8*
 %dir %{_datadir}/doc/pam_hbac
 %{_datadir}/doc/pam_hbac/COPYING
 %{_datadir}/doc/pam_hbac/README.AIX
@@ -82,6 +65,12 @@ rm -f $RPM_BUILD_ROOT/%{security_parent_dir}/security/*.la
 %{_datadir}/doc/pam_hbac/README.md
 
 %changelog
+* Thu Feb 06 2026 pam_hbac maintainers - 1.2-2
+- Rebuild for OpenLDAP 2.6.x on AIX 7.2/7.3
+- Link libldap/liblber by full path (pinned to /opt/freeware/lib)
+- Remove RHEL-5 workarounds and asciidoc requirement
+- Disable man pages on AIX
+
 * Thu Jan 11 2018 Jakub Hrozek <jakub.hrozek@posteo.se> - 1.2-1
 - Package 1.2
 
