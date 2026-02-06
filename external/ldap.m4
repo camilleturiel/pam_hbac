@@ -35,18 +35,24 @@ AC_DEFUN([AM_CHECK_OPENLDAP],
                     #endif
                     ])
 
-    dnl Check lber first -- on AIX the linker is strict and libldap depends
-    dnl on liblber (and possibly libssl/libcrypto), so the ldap link test
-    dnl needs these as extra dependencies.
+    dnl On AIX the linker requires all transitive dependencies to be
+    dnl specified.  libldap.a depends on: liblber, libsasl2, libssl,
+    dnl libcrypto, libpthread.  Probe for each one and build the
+    dnl dependency list incrementally, then use AC_TRY_LINK (which
+    dnl does not cache) to test ldap_initialize with all of them.
     LDAP_EXTRA_LIBS=""
-    AC_CHECK_LIB(lber, ber_pvt_opt_on, [LDAP_EXTRA_LIBS="-llber"])
+    AC_CHECK_LIB(lber, ber_pvt_opt_on,
+                 [LDAP_EXTRA_LIBS="$LDAP_EXTRA_LIBS -llber"])
+    AC_CHECK_LIB(sasl2, sasl_client_init,
+                 [LDAP_EXTRA_LIBS="$LDAP_EXTRA_LIBS -lsasl2"])
+    AC_CHECK_LIB(ssl, SSL_CTX_new,
+                 [LDAP_EXTRA_LIBS="$LDAP_EXTRA_LIBS -lssl"])
+    AC_CHECK_LIB(crypto, EVP_EncryptInit,
+                 [LDAP_EXTRA_LIBS="$LDAP_EXTRA_LIBS -lcrypto"])
 
-    dnl Try linking ldap_initialize with its dependencies.
-    dnl Use AC_TRY_LINK instead of AC_CHECK_LIB to avoid caching issues
-    dnl when retrying with different dependency sets.
+    dnl Try linking ldap_initialize with all discovered dependencies.
+    dnl Use AC_TRY_LINK to avoid caching issues with AC_CHECK_LIB.
     with_ldap=no
-
-    dnl First try: -lldap + lber
     AC_MSG_CHECKING([for ldap_initialize in -lldap])
     SAVE_LIBS2=$LIBS
     LIBS="$LIBS -lldap $LDAP_EXTRA_LIBS"
@@ -56,20 +62,10 @@ AC_DEFUN([AM_CHECK_OPENLDAP],
                 [AC_MSG_RESULT([no])])
     LIBS=$SAVE_LIBS2
 
-    dnl Second try: also add -lssl -lcrypto (OpenLDAP built with TLS)
     if test "$with_ldap" != "yes"; then
-        AC_MSG_CHECKING([for ldap_initialize in -lldap (with -lssl -lcrypto)])
-        SAVE_LIBS2=$LIBS
-        LIBS="$LIBS -lldap $LDAP_EXTRA_LIBS -lssl -lcrypto"
-        AC_TRY_LINK([#include <ldap.h>],
-                    [ldap_initialize(0, 0);],
-                    [with_ldap=yes; LDAP_EXTRA_LIBS="$LDAP_EXTRA_LIBS -lssl -lcrypto"; AC_MSG_RESULT([yes])],
-                    [AC_MSG_RESULT([no])])
-        LIBS=$SAVE_LIBS2
-    fi
-
-    if test "$with_ldap" != "yes"; then
-        AC_MSG_ERROR([OpenLDAP 2.6.x libraries not found (requires ldap_initialize)])
+        AC_MSG_ERROR([OpenLDAP 2.6.x libraries not found (requires ldap_initialize).
+            Link test failed with: -lldap $LDAP_EXTRA_LIBS
+            Check config.log for details.])
     fi
 
     OPENLDAP_LIBS="${OPENLDAP_LIBS} -lldap ${LDAP_EXTRA_LIBS}"
