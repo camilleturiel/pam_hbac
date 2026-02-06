@@ -52,6 +52,14 @@ AC_DEFUN([AM_CHECK_OPENLDAP],
     LIBS="$LIBS $OPENLDAP_LIBS"
     AC_CHECK_FUNCS([ldap_initialize ldap_start_tls ldap_str2dn ldap_dnfree ldapssl_client_init])
 
+    dnl OpenLDAP 2.6.x removed ldap_str2dn/ldap_dnfree functions but still
+    dnl defines the LDAPAVA/LDAPRDN/LDAPDN types in <ldap.h>. Check for the
+    dnl type so we don't redefine it when the header already provides it.
+    AC_CHECK_TYPES([LDAPAVA],,,[
+        #include <lber.h>
+        #include <ldap.h>
+    ])
+
     CFLAGS=$SAVE_CFLAGS
     LIBS=$SAVE_LIBS
 

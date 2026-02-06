@@ -150,7 +150,11 @@ extern int _getgroupsbymember(const char *, gid_t[], int, int);
 #define LDAP_OPT_SSL 0x0A
 #endif
 
-#if !defined(HAVE_LDAP_STR2DN) || defined(COMPAT_LDAP_UNIT_TESTS)
+/* Only define LDAPAVA/LDAPRDN/LDAPDN if the LDAP headers don't provide them.
+ * OpenLDAP 2.6.x removed ldap_str2dn()/ldap_dnfree() but still defines these
+ * types, so we cannot use HAVE_LDAP_STR2DN as a proxy for type availability.
+ */
+#if !defined(HAVE_LDAPAVA) || defined(COMPAT_LDAP_UNIT_TESTS)
 typedef struct ldap_ava {
     struct berval la_attr;
     struct berval la_value;
