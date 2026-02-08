@@ -1,7 +1,8 @@
 %if 0%{?fedora} > 16 || 0%{?rhel} > 6
-%global security_parent_dir /%{_libdir}
+%global security_parent_dir %{_libdir}
 %else
-%global security_parent_dir /%{_lib}
+# AIX: PAM modules live in /usr/lib/security
+%global security_parent_dir /usr/lib
 %endif
 
 Name:           pam_hbac
@@ -36,8 +37,8 @@ for environments that can't use SSSD for some reason.
 
 %build
 autoreconf -if
-%configure --libdir=/%{security_parent_dir} \
-           --with-pammoddir=/%{security_parent_dir}/security \
+%configure --libdir=%{security_parent_dir} \
+           --with-pammoddir=%{security_parent_dir}/security \
            --disable-man-pages \
            ${null}
 
@@ -46,7 +47,7 @@ make %{?_smp_mflags}
 
 %install
 make install DESTDIR=$RPM_BUILD_ROOT
-rm -f $RPM_BUILD_ROOT/%{security_parent_dir}/security/*.la
+rm -f $RPM_BUILD_ROOT%{security_parent_dir}/security/*.la
 
 
 %files
