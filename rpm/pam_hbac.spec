@@ -48,12 +48,20 @@ make %{?_smp_mflags}
 make install DESTDIR=$RPM_BUILD_ROOT
 find $RPM_BUILD_ROOT -name 'pam_hbac*' -type f 2>/dev/null || true
 rm -f $RPM_BUILD_ROOT%{security_parent_dir}/security/*.la
+# AIX libtool installs a .a archive containing the .so member — extract it
+cd $RPM_BUILD_ROOT%{security_parent_dir}/security
+ar -x pam_hbac.a
+rm -f pam_hbac.a
+# The member may be named pam_hbac.so.0 — rename to pam_hbac.so
+if [ -f pam_hbac.so.0 ] && [ ! -f pam_hbac.so ]; then
+    mv pam_hbac.so.0 pam_hbac.so
+fi
 
 
 %files
 %defattr(-,root,root,-)
 %doc README* COPYING* ChangeLog NEWS
-%{security_parent_dir}/security/pam_hbac.a
+%{security_parent_dir}/security/pam_hbac.so
 
 %changelog
 * Fri Feb 06 2026 pam_hbac maintainers - 1.2-5.0
