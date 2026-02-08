@@ -53,7 +53,7 @@ rm -f $RPM_BUILD_ROOT%{security_parent_dir}/security/*.la
 %files
 %defattr(-,root,root,-)
 %doc README* COPYING* ChangeLog NEWS
-%{security_parent_dir}/security/pam_hbac.so
+%{security_parent_dir}/security/pam_hbac.a
 %dir %{_datadir}/doc/pam_hbac
 %{_datadir}/doc/pam_hbac/COPYING
 %{_datadir}/doc/pam_hbac/README.AIX
