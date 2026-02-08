@@ -86,7 +86,7 @@ int main(int argc, char *argv[])
 
     fprintf(stdout, "service: %s\nuser: %s\n", svc, user);
 
-    openlog("pam_test_client", LOG_CONS | LOG_PID, LOG_AUTHPRIV);
+    openlog("pam_test_client", LOG_CONS | LOG_PID | LOG_PERROR, LOG_AUTHPRIV);
 
     ret = pam_start(svc, user, &conv, &pamh);
     if (ret != PAM_SUCCESS) {
