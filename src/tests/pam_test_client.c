@@ -26,6 +26,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>
+#include <syslog.h>
 
 #include "pam_hbac_compat.h"
 
@@ -85,6 +86,8 @@ int main(int argc, char *argv[])
 
     fprintf(stdout, "service: %s\nuser: %s\n", svc, user);
 
+    openlog("pam_test_client", LOG_CONS | LOG_PID, LOG_AUTHPRIV);
+
     ret = pam_start(svc, user, &conv, &pamh);
     if (ret != PAM_SUCCESS) {
         fprintf(stderr, "pam_start failed: %s\n", pam_strerror(pamh, ret));
@@ -96,5 +99,6 @@ int main(int argc, char *argv[])
     fprintf(stderr, "pam_acct_mgmt: %s\n", pam_strerror(pamh, ret));
 
     pam_end(pamh, ret);
+    closelog();
     return 0;
 }
