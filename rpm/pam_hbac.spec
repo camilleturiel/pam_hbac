@@ -7,7 +7,7 @@
 
 Name:           pam_hbac
 Version:	1.2
-Release:	1%{?dist}
+Release:	5.0.aix7.3
 Summary:	A PAM module that evaluates HBAC rules stored on an IPA server
 
 License:	GPLv3+
@@ -65,7 +65,7 @@ rm -f $RPM_BUILD_ROOT%{security_parent_dir}/security/*.la
 %{_datadir}/doc/pam_hbac/README.md
 
 %changelog
-* Fri Feb 06 2026 pam_hbac maintainers - 1.2-2
+* Fri Feb 06 2026 pam_hbac maintainers - 1.2-5.0.aix7.3
 - Rebuild for OpenLDAP 2.6.x on AIX 7.2/7.3
 - Link libldap/liblber by full path (pinned to /opt/freeware/lib)
 - Remove RHEL-5 workarounds and asciidoc requirement
