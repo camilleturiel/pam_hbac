@@ -28,8 +28,8 @@
 #include <string.h>
 #include "pam_hbac_compat.h"
 
-#define PAM_TEST_DFL_SVC    "pam_hbac_test"
-#define PAM_TEST_DFL_USER   "dummy"
+#define PAM_TEST_DFL_SVC    "sshd"
+#define PAM_TEST_DFL_USER   "beef"
 
 #ifdef HAVE_SECURITY_PAM_MISC_H
 # include <security/pam_misc.h>
@@ -90,7 +90,7 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    fprintf(stdout, "testing pam_acct_mgmt\n");
+    fprintf(stdout, "testing pam_acct_mgmt()\n");
     ret = pam_acct_mgmt(pamh, 0);
     fprintf(stdout, "pam_acct_mgmt [%d]: %s\n", ret, pam_strerror(pamh, ret));
 
