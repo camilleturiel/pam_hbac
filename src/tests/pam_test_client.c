@@ -26,8 +26,6 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>
-#include <syslog.h>
-
 #include "pam_hbac_compat.h"
 
 #define PAM_TEST_DFL_SVC    "pam_hbac_test"
@@ -72,7 +70,7 @@ int main(int argc, char *argv[])
     int ret;
 
     if (argc == 1) {
-        fprintf(stderr, "missing user and service name, using default\n");
+        fprintf(stdout, "missing user and service name, using default\n");
         user = strdup(PAM_TEST_DFL_USER);
         svc = strdup(PAM_TEST_DFL_SVC);
     } else if (argc == 2) {
@@ -86,19 +84,16 @@ int main(int argc, char *argv[])
 
     fprintf(stdout, "service: %s\nuser: %s\n", svc, user);
 
-    openlog("pam_test_client", LOG_CONS | LOG_PID | LOG_PERROR, LOG_AUTHPRIV);
-
     ret = pam_start(svc, user, &conv, &pamh);
     if (ret != PAM_SUCCESS) {
-        fprintf(stderr, "pam_start failed: %s\n", pam_strerror(pamh, ret));
+        fprintf(stdout, "pam_start: %s\n", pam_strerror(pamh, ret));
         return 1;
     }
 
     fprintf(stdout, "testing pam_acct_mgmt\n");
     ret = pam_acct_mgmt(pamh, 0);
-    fprintf(stderr, "pam_acct_mgmt: %s\n", pam_strerror(pamh, ret));
+    fprintf(stdout, "pam_acct_mgmt [%d]: %s\n", ret, pam_strerror(pamh, ret));
 
     pam_end(pamh, ret);
-    closelog();
     return 0;
 }
