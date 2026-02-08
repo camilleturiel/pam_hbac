@@ -37,16 +37,16 @@ for environments that can't use SSSD for some reason.
 
 %build
 autoreconf -if
-%configure --libdir=%{security_parent_dir} \
-           --with-pammoddir=%{security_parent_dir}/security \
-           --disable-man-pages \
-           ${null}
+./configure --sysconfdir=/etc/security/ldap \
+            --with-pammoddir=%{security_parent_dir}/security \
+            --disable-man-pages
 
 make %{?_smp_mflags}
 
 
 %install
 make install DESTDIR=$RPM_BUILD_ROOT
+find $RPM_BUILD_ROOT -name 'pam_hbac*' -type f 2>/dev/null || true
 rm -f $RPM_BUILD_ROOT%{security_parent_dir}/security/*.la
 
 
