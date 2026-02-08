@@ -54,15 +54,6 @@ rm -f $RPM_BUILD_ROOT%{security_parent_dir}/security/*.la
 %defattr(-,root,root,-)
 %doc README* COPYING* ChangeLog NEWS
 %{security_parent_dir}/security/pam_hbac.a
-%dir %{_datadir}/doc/pam_hbac
-%{_datadir}/doc/pam_hbac/COPYING
-%{_datadir}/doc/pam_hbac/README.AIX
-%{_datadir}/doc/pam_hbac/README.HPUX
-%{_datadir}/doc/pam_hbac/README.FreeBSD
-%{_datadir}/doc/pam_hbac/README.Solaris
-%{_datadir}/doc/pam_hbac/README.RHEL-5
-%{_datadir}/doc/pam_hbac/README.RHEL-6
-%{_datadir}/doc/pam_hbac/README.md
 
 %changelog
 * Fri Feb 06 2026 pam_hbac maintainers - 1.2-5.0.aix7.3
