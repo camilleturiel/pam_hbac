@@ -45,17 +45,10 @@ make %{?_smp_mflags}
 
 
 %install
-make install DESTDIR=$RPM_BUILD_ROOT
-find $RPM_BUILD_ROOT -name 'pam_hbac*' -type f 2>/dev/null || true
-rm -f $RPM_BUILD_ROOT%{security_parent_dir}/security/*.la
-# AIX libtool installs a .a archive containing the .so member — extract it
-cd $RPM_BUILD_ROOT%{security_parent_dir}/security
-ar -x pam_hbac.a
-rm -f pam_hbac.a
-# The member may be named pam_hbac.so.0 — rename to pam_hbac.so
-if [ -f pam_hbac.so.0 ] && [ ! -f pam_hbac.so ]; then
-    mv pam_hbac.so.0 pam_hbac.so
-fi
+mkdir -p $RPM_BUILD_ROOT%{security_parent_dir}/security
+# Install the .so directly from libtool's build dir — the .a produced
+# by "make install" on AIX is not a proper standalone loadable module
+install -m 755 src/.libs/pam_hbac.so $RPM_BUILD_ROOT%{security_parent_dir}/security/pam_hbac.so
 
 
 %files
