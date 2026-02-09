@@ -49,13 +49,13 @@ mkdir -p $RPM_BUILD_ROOT%{security_parent_dir}/security
 # Bypass libtool install — it creates a .a with -bM:SRE attributes that
 # dlopen() cannot load standalone. Instead, manually link the .o files
 # into a proper loadable module using -G (AIX loadable module flag).
-${CC:-cc} -G -bnoentry -bexpall \
+${CC:-cc} -Wl,-G -Wl,-bnoentry -Wl,-bexpall \
     -o $RPM_BUILD_ROOT%{security_parent_dir}/security/pam_hbac \
     src/.libs/*.o \
     /opt/freeware/lib/libldap.a /opt/freeware/lib/liblber.a \
     -lsasl2 -lssl -lcrypto -lpam -lglib-2.0 -lpthread \
     -L/opt/freeware/lib -L/usr/lib \
-    -blibpath:/opt/freeware/lib:/usr/lib:/lib
+    -Wl,-blibpath:/opt/freeware/lib:/usr/lib:/lib
 chmod 755 $RPM_BUILD_ROOT%{security_parent_dir}/security/pam_hbac
 
 
