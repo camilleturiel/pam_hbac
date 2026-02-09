@@ -45,25 +45,19 @@ make %{?_smp_mflags}
 
 
 %install
-mkdir -p $RPM_BUILD_ROOT%{security_parent_dir}/security
-# Debug: show what libtool actually built
-echo "=== Contents of src/.libs/ ==="
-ls -la src/.libs/pam_hbac* 2>/dev/null || true
-# On AIX, libtool may only produce .a — extract the .so member from it
-if [ -f src/.libs/pam_hbac.so ]; then
-    cp src/.libs/pam_hbac.so $RPM_BUILD_ROOT%{security_parent_dir}/security/pam_hbac.so
-elif [ -f src/.libs/pam_hbac.a ]; then
-    cd src/.libs
-    ar -x pam_hbac.a
-    cd -
-    # Member may be pam_hbac.so.0 or pam_hbac.so
-    if [ -f src/.libs/pam_hbac.so ]; then
-        cp src/.libs/pam_hbac.so $RPM_BUILD_ROOT%{security_parent_dir}/security/pam_hbac.so
-    elif [ -f src/.libs/pam_hbac.so.0 ]; then
-        cp src/.libs/pam_hbac.so.0 $RPM_BUILD_ROOT%{security_parent_dir}/security/pam_hbac.so
-    fi
+make install DESTDIR=$RPM_BUILD_ROOT
+rm -f $RPM_BUILD_ROOT%{security_parent_dir}/security/*.la
+# AIX libtool links and installs as .a — extract the .so member
+cd $RPM_BUILD_ROOT%{security_parent_dir}/security
+ar -t pam_hbac.a
+ar -x pam_hbac.a
+rm -f pam_hbac.a
+ls -la pam_hbac* 2>/dev/null || true
+# Member may be pam_hbac.so.0 — rename to pam_hbac.so
+if [ -f pam_hbac.so.0 ] && [ ! -f pam_hbac.so ]; then
+    mv pam_hbac.so.0 pam_hbac.so
 fi
-chmod 755 $RPM_BUILD_ROOT%{security_parent_dir}/security/pam_hbac.so
+chmod 755 pam_hbac.so
 
 
 %files
