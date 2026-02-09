@@ -46,9 +46,23 @@ make %{?_smp_mflags}
 
 %install
 mkdir -p $RPM_BUILD_ROOT%{security_parent_dir}/security
-# Install the .so directly from libtool's build dir — the .a produced
-# by "make install" on AIX is not a proper standalone loadable module
-cp src/.libs/pam_hbac.so $RPM_BUILD_ROOT%{security_parent_dir}/security/pam_hbac.so
+# Debug: show what libtool actually built
+echo "=== Contents of src/.libs/ ==="
+ls -la src/.libs/pam_hbac* 2>/dev/null || true
+# On AIX, libtool may only produce .a — extract the .so member from it
+if [ -f src/.libs/pam_hbac.so ]; then
+    cp src/.libs/pam_hbac.so $RPM_BUILD_ROOT%{security_parent_dir}/security/pam_hbac.so
+elif [ -f src/.libs/pam_hbac.a ]; then
+    cd src/.libs
+    ar -x pam_hbac.a
+    cd -
+    # Member may be pam_hbac.so.0 or pam_hbac.so
+    if [ -f src/.libs/pam_hbac.so ]; then
+        cp src/.libs/pam_hbac.so $RPM_BUILD_ROOT%{security_parent_dir}/security/pam_hbac.so
+    elif [ -f src/.libs/pam_hbac.so.0 ]; then
+        cp src/.libs/pam_hbac.so.0 $RPM_BUILD_ROOT%{security_parent_dir}/security/pam_hbac.so
+    fi
+fi
 chmod 755 $RPM_BUILD_ROOT%{security_parent_dir}/security/pam_hbac.so
 
 
