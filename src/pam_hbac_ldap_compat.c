@@ -20,7 +20,6 @@
 
 #include <ctype.h>
 
-#if !defined(HAVE_LDAP_STR2DN) || defined(COMPAT_LDAP_UNIT_TESTS)
 static int rdn_keyval(const char *exploded_rdn_value,
                       char **_key, char **_val)
 {
@@ -103,7 +102,7 @@ static LDAPAVA *rdn2ava(const char *rdn)
 
     ava = malloc(sizeof(LDAPAVA));
     if (ava == NULL) {
-        ldap_value_free(exploded_rdn);
+        ldap_memvfree((void **)exploded_rdn);
         return NULL;
     }
 
@@ -111,7 +110,7 @@ static LDAPAVA *rdn2ava(const char *rdn)
      * single-valued RDNs, we know IPA doesn't use those
      */
     ret = rdn_keyval(exploded_rdn[0], &key, &val);
-    ldap_value_free(exploded_rdn);
+    ldap_memvfree((void **)exploded_rdn);
     if (ret != 0 || key == NULL || val == NULL) {
         free(key);
         free(val);
@@ -145,13 +144,12 @@ static int str2rdn(const char *str_rdn, LDAPRDN *_rdn)
     *_rdn = new_rdn;
     return 0;
 }
-#endif
 
+/* ldap_str2dn was removed in OpenLDAP 2.6.x.
+ * Use ldap_explode_dn to parse DN components instead.
+ */
 int ph_str2dn(const char *str, LDAPDN *dn)
 {
-#if defined(HAVE_LDAP_STR2DN) && !defined(COMPAT_LDAP_UNIT_TESTS)
-    return ldap_str2dn(str, dn, LDAP_DN_FORMAT_LDAPV3);
-#else
     char **str_rdn_list;
     size_t n_rdns;
     size_t i;
@@ -172,14 +170,14 @@ int ph_str2dn(const char *str, LDAPDN *dn)
 
     new_dn = calloc(n_rdns + 1, sizeof(LDAPRDN));
     if (new_dn == NULL) {
-        ldap_value_free(str_rdn_list);
+        ldap_memvfree((void **)str_rdn_list);
         return ENOMEM;
     }
 
     for (i = 0; str_rdn_list[i]; i++) {
         ret = str2rdn(str_rdn_list[i], &rdn);
         if (ret != 0) {
-            ldap_value_free(str_rdn_list);
+            ldap_memvfree((void **)str_rdn_list);
             ph_ldap_dnfree(new_dn);
             return ret;
         }
@@ -187,74 +185,16 @@ int ph_str2dn(const char *str, LDAPDN *dn)
         new_dn[i] = rdn;
     }
 
-    ldap_value_free(str_rdn_list);
+    ldap_memvfree((void **)str_rdn_list);
     *dn = new_dn;
     return LDAP_SUCCESS;
-#endif
 }
 
-#if !defined(HAVE_LDAP_INITIALIZE) || defined(COMPAT_LDAP_UNIT_TESTS)
-static ssize_t uri_proto_prefix_len(const char *uri)
-{
-
-    if (strncasecmp(uri, "ldap://", sizeof("ldap://")-1) == 0) {
-        /* The server is IPA and we don't support anything else */
-        return sizeof("ldap://")-1;
-    }
-
-#ifdef HAVE_LDAPSSL_CLIENT_INIT
-    /* Older MozLDAP/SunLDAP libraries don't support StartTLS but only
-     * SSL.
-     */
-    if (strncasecmp(uri, "ldaps://", sizeof("ldaps://")-1) == 0) {
-        /* The server is IPA and we don't support anything else */
-        return sizeof("ldaps://")-1;
-    }
-#endif
-
-    return -1;
-}
-#endif
-
-/* ldap_initialize version for systems that only have ldap_init.
- * More or less stolen from nss-pam-ldapd
- */
 int ph_ldap_initialize(LDAP **ld, const char *uri, bool secure)
 {
-#if defined(HAVE_LDAP_INITIALIZE) && !defined(COMPAT_LDAP_UNIT_TESTS)
     return ldap_initialize(ld, uri);
-#else
-    char hostname[HOST_NAME_MAX+1];
-    size_t hostlen;
-    ssize_t uri_prefix;
-
-    if (ld == NULL || uri == NULL) {
-        return EINVAL;
-    }
-
-    uri_prefix = uri_proto_prefix_len(uri);
-    if (uri_prefix == -1) {
-        return LDAP_INVALID_SYNTAX;
-    }
-
-    strncpy(hostname, uri + uri_prefix, sizeof(hostname));
-    hostname[HOST_NAME_MAX] = '\0';
-
-    hostlen = strlen(hostname);
-    if (hostlen == 0) {
-        return LDAP_INVALID_SYNTAX;
-    }
-
-    *ld = ldap_init(hostname, secure ? LDAPS_PORT : LDAP_PORT);
-    if (*ld == NULL) {
-        return LDAP_OPERATIONS_ERROR;
-    }
-
-    return LDAP_SUCCESS;
-#endif
 }
 
-#if !defined(HAVE_LDAP_DNFREE) || defined(COMPAT_LDAP_UNIT_TESTS)
 static void free_ava(LDAPAVA *ava)
 {
     if (ava == NULL) {
@@ -275,13 +215,12 @@ static void free_rdn(LDAPRDN rdn)
     free_ava(rdn[0]);
     free(rdn);
 }
-#endif
 
+/* ldap_dnfree was removed in OpenLDAP 2.6.x.
+ * Free DN components allocated by ph_str2dn.
+ */
 void ph_ldap_dnfree(LDAPDN dn)
 {
-#if defined(HAVE_LDAP_DNFREE) && !defined(COMPAT_LDAP_UNIT_TESTS)
-    ldap_dnfree(dn);
-#else
     size_t i;
 
     if (dn == NULL) {
@@ -292,6 +231,4 @@ void ph_ldap_dnfree(LDAPDN dn)
         free_rdn(dn[i]);
     }
     free(dn);
-
-#endif
 }

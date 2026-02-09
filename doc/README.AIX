@@ -1,7 +1,7 @@
 This file describes how to configure pam_hbac for access control on a
 AIX machine.
 
-Only tested on AIX 7.1 TL4.
+Tested on AIX 7.1 TL4, AIX 7.2 and AIX 7.3.
 
 Prerequisities
 ==============
@@ -20,10 +20,15 @@ It is recommended to use the yum.sh script provided at the top of their webpage,
 it will install the RPM package manager and provide the yum utility
 (https://ftp.software.ibm.com/aix/freeSoftware/aixtoolbox/ezinstall/ppc/yum.sh) that
 will ensure all dependencies are installed.
-Please make sure all required dependencies are installed. On AIX 7.1 TL4, this
+Please make sure all required dependencies are installed. On AIX 7.2/7.3, this
 would be:
-    autoconf-2.69-1 automake-1.15-1 gcc-6.3.0-1 gcc-cpp-6.3.0-1 gettext-0.19.7-1 \
-    glib2-2.48.0-1 libtool-2.4.6-2 m4-1.4.13-1 openldap-2.4.40-2 pkg-config-0.19-6
+    autoconf automake gcc gcc-cpp gettext \
+    glib2 libtool m4 openldap openldap-devel pkg-config
+
+Both OpenLDAP 2.4.x and OpenLDAP 2.6.x (e.g. openldap-2.6.9-1) are supported.
+The build system auto-detects the available LDAP functions at configure time.
+OpenLDAP 2.6.x removed the deprecated ldap_str2dn() and ldap_dnfree() functions;
+the built-in fallback implementations in pam_hbac will be used automatically.
 
 This build does not have manpages. In AIX the utility a2x does something other than
 converting asciidoc. It must be either removed from the PATH variable or you
@@ -34,6 +39,15 @@ When building for AIX, use the following invocation:
     $ autoreconf -if
     $ LDFLAGS="-L/usr/lib" LIBS="-lpthread" ./configure --sysconfdir=/etc/security/ldap \
             --with-pammoddir=/usr/lib/security --disable-man-pages
+
+Using the build script
+======================
+The .build/ball.sh script automates the full build process for AIX:
+    $ .build/ball.sh           # Build with ibm-clang for AIX 7.2
+    $ .build/ball.sh -g        # Build with GCC
+    $ .build/ball.sh -7        # Build targeting AIX 7.3
+    $ .build/ball.sh -g -7     # Build with GCC for AIX 7.3
+    $ .build/ball.sh -r -s     # Build RPM package with sudo
 
 SSL/TLS
 =======

@@ -150,16 +150,7 @@ extern int _getgroupsbymember(const char *, gid_t[], int, int);
 #define LDAP_OPT_SSL 0x0A
 #endif
 
-#if !defined(HAVE_LDAP_STR2DN) || defined(COMPAT_UNIT_TESTING)
-typedef struct ldap_ava {
-    struct berval la_attr;
-    struct berval la_value;
-    unsigned la_flags;
-} LDAPAVA;
-
-typedef LDAPAVA** LDAPRDN;
-typedef LDAPRDN* LDAPDN;
-#endif
+/* LDAPAVA/LDAPRDN/LDAPDN types are provided by OpenLDAP 2.6.x <ldap.h> */
 
 int ph_ldap_initialize(LDAP **ld, const char *uri, bool secure);
 int ph_str2dn(const char *str, LDAPDN *dn);

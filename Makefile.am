@@ -47,11 +47,13 @@ pam_hbac_la_SOURCES = \
 		     $(NULL)
 
 pam_hbac_la_LDFLAGS = \
-		     $(UNICODE_LIBS) \
-		     $(OPENLDAP_LIBS) \
 		     -lpam \
 		     -module \
 		     -avoid-version
+
+pam_hbac_la_LIBADD = \
+		     $(UNICODE_LIBS) \
+		     $(OPENLDAP_LIBS)
 
 if NEEDS_PORTABLE
 pam_hbac_la_SOURCES += \
@@ -197,8 +199,6 @@ dnparse_compat_tests_SOURCES = \
 dnparse_compat_tests_CFLAGS = \
 	$(AM_CFLAGS) \
 	$(CMOCKA_CFLAGS) \
-	-DCOMPAT_LDAP_UNIT_TESTS \
-	-DLDAP_DEPRECATED \
 	$(NULL)
 dnparse_compat_tests_LDADD = \
 	$(OPENLDAP_LIBS) \
