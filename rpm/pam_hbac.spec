@@ -14,6 +14,10 @@ License:	GPLv3+
 URL:		https://github.com/jhrozek/pam_hbac
 Source0:	%{name}-%{version}.tar.gz
 
+# AIX: openssl/libcrypto live inside .a archives, not as standalone .so
+# RPM's auto-dependency scanner finds .so references that no RPM provides
+AutoReq:	no
+
 BuildRequires:	autoconf
 BuildRequires:	automake
 BuildRequires:	libtool
