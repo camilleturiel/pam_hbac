@@ -49,24 +49,23 @@ make %{?_smp_mflags}
 
 
 %install
-mkdir -p $RPM_BUILD_ROOT%{security_parent_dir}/security
-# Bypass libtool install — it creates a .a with -bM:SRE attributes that
-# dlopen() cannot load standalone. Instead, manually link the .o files
-# into a proper loadable module using -G (AIX loadable module flag).
-${CC:-cc} -Wl,-G -Wl,-bnoentry -Wl,-bexpall \
-    -o $RPM_BUILD_ROOT%{security_parent_dir}/security/pam_hbac \
-    src/.libs/*.o \
-    /opt/freeware/lib/libldap.a /opt/freeware/lib/liblber.a \
-    -lsasl2 -lssl -lcrypto -lpam -lglib-2.0 -lpthread \
-    -L/opt/freeware/lib -L/usr/lib \
-    -Wl,-blibpath:/opt/freeware/lib:/usr/lib:/lib
-chmod 755 $RPM_BUILD_ROOT%{security_parent_dir}/security/pam_hbac
+make install DESTDIR=$RPM_BUILD_ROOT
+rm -f $RPM_BUILD_ROOT%{security_parent_dir}/security/*.la
+# AIX libtool installs as .a — extract the .so member
+cd $RPM_BUILD_ROOT%{security_parent_dir}/security
+ar -x pam_hbac.a
+rm -f pam_hbac.a
+# Member may be pam_hbac.so.0 — rename to pam_hbac.so
+if [ -f pam_hbac.so.0 ] && [ ! -f pam_hbac.so ]; then
+    mv pam_hbac.so.0 pam_hbac.so
+fi
+chmod 755 pam_hbac.so
 
 
 %files
 %defattr(-,root,root,-)
 %doc README* COPYING* ChangeLog NEWS
-%{security_parent_dir}/security/pam_hbac
+%{security_parent_dir}/security/pam_hbac.so
 
 %changelog
 * Fri Feb 06 2026 pam_hbac maintainers - 1.2-5.0
