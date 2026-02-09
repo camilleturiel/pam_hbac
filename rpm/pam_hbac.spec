@@ -45,23 +45,18 @@ make %{?_smp_mflags}
 
 
 %install
-make install DESTDIR=$RPM_BUILD_ROOT
-rm -f $RPM_BUILD_ROOT%{security_parent_dir}/security/*.la
-# AIX libtool links and installs as .a — extract the shared member
-cd $RPM_BUILD_ROOT%{security_parent_dir}/security
-ar -t pam_hbac.a
-ar -x pam_hbac.a
-rm -f pam_hbac.a
-ls -la pam_hbac* 2>/dev/null || true
-# AIX PAM modules have no extension (e.g. pam_aix, not pam_aix.so)
-# Rename extracted member to pam_hbac (no extension)
-for f in pam_hbac.so pam_hbac.so.0; do
-    if [ -f "$f" ]; then
-        mv "$f" pam_hbac
-        break
-    fi
-done
-chmod 755 pam_hbac
+mkdir -p $RPM_BUILD_ROOT%{security_parent_dir}/security
+# Bypass libtool install — it creates a .a with -bM:SRE attributes that
+# dlopen() cannot load standalone. Instead, manually link the .o files
+# into a proper loadable module using -G (AIX loadable module flag).
+${CC:-cc} -G -bnoentry -bexpall \
+    -o $RPM_BUILD_ROOT%{security_parent_dir}/security/pam_hbac \
+    src/.libs/*.o \
+    /opt/freeware/lib/libldap.a /opt/freeware/lib/liblber.a \
+    -lsasl2 -lssl -lcrypto -lpam -lglib-2.0 -lpthread \
+    -L/opt/freeware/lib -L/usr/lib \
+    -blibpath:/opt/freeware/lib:/usr/lib:/lib
+chmod 755 $RPM_BUILD_ROOT%{security_parent_dir}/security/pam_hbac
 
 
 %files
