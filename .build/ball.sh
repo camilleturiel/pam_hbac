@@ -41,7 +41,9 @@ export M4=/usr/opt/freeware/bin/m4
 # /opt/freeware/lib MUST come before /usr/lib so the linker finds
 # OpenLDAP 2.6.x (in /opt/freeware/lib) before any old system LDAP
 # library that may exist in /usr/lib.
-export LDFLAGS="-L/opt/freeware/lib -L/usr/lib"
+# -blibpath embeds the runtime library search path into the binary so
+# pam_hbac.so finds libldap/liblber without a global LIBPATH setting
+export LDFLAGS="-L/opt/freeware/lib -L/usr/lib -Wl,-blibpath:/opt/freeware/lib:/usr/lib:/lib"
 export LIBS="-lpthread"
 
 # Compiler specific section
