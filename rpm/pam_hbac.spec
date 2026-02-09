@@ -47,23 +47,27 @@ make %{?_smp_mflags}
 %install
 make install DESTDIR=$RPM_BUILD_ROOT
 rm -f $RPM_BUILD_ROOT%{security_parent_dir}/security/*.la
-# AIX libtool links and installs as .a — extract the .so member
+# AIX libtool links and installs as .a — extract the shared member
 cd $RPM_BUILD_ROOT%{security_parent_dir}/security
 ar -t pam_hbac.a
 ar -x pam_hbac.a
 rm -f pam_hbac.a
 ls -la pam_hbac* 2>/dev/null || true
-# Member may be pam_hbac.so.0 — rename to pam_hbac.so
-if [ -f pam_hbac.so.0 ] && [ ! -f pam_hbac.so ]; then
-    mv pam_hbac.so.0 pam_hbac.so
-fi
-chmod 755 pam_hbac.so
+# AIX PAM modules have no extension (e.g. pam_aix, not pam_aix.so)
+# Rename extracted member to pam_hbac (no extension)
+for f in pam_hbac.so pam_hbac.so.0; do
+    if [ -f "$f" ]; then
+        mv "$f" pam_hbac
+        break
+    fi
+done
+chmod 755 pam_hbac
 
 
 %files
 %defattr(-,root,root,-)
 %doc README* COPYING* ChangeLog NEWS
-%{security_parent_dir}/security/pam_hbac.so
+%{security_parent_dir}/security/pam_hbac
 
 %changelog
 * Fri Feb 06 2026 pam_hbac maintainers - 1.2-5.0
