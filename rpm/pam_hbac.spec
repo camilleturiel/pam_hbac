@@ -60,12 +60,18 @@ if [ -f pam_hbac.so.0 ] && [ ! -f pam_hbac.so ]; then
     mv pam_hbac.so.0 pam_hbac.so
 fi
 chmod 755 pam_hbac.so
+# Install pam_test_client (built by make but not installed by make install)
+cd /opt/freeware/src/packages/BUILD/%{name}-%{version}
+mkdir -p $RPM_BUILD_ROOT/opt/freeware/bin
+cp pam_test_client $RPM_BUILD_ROOT/opt/freeware/bin/pam_test_client
+chmod 755 $RPM_BUILD_ROOT/opt/freeware/bin/pam_test_client
 
 
 %files
 %defattr(-,root,root,-)
 %doc README* COPYING* ChangeLog NEWS
 %{security_parent_dir}/security/pam_hbac.so
+/opt/freeware/bin/pam_test_client
 
 %post
 # AIX: ensure LIBPATH includes /opt/freeware/lib for pam_hbac runtime deps
