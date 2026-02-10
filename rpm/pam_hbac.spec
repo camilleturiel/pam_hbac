@@ -74,6 +74,8 @@ if [ "$(uname -s)" = "AIX" ]; then
     if [ -f /etc/environment ]; then
         if ! grep -q "^LIBPATH=.*\/opt\/freeware\/lib" /etc/environment; then
             echo "$LIBPATH_LINE" >> /etc/environment
+            # Restart sshd to pick up new LIBPATH
+            stopsrc -s sshd && startsrc -s sshd
         fi
     fi
 fi
