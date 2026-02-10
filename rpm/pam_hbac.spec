@@ -25,8 +25,10 @@ BuildRequires:	m4
 BuildRequires:	pkgconfig
 
 BuildRequires:	gettext-devel
-BuildRequires:	openldap-devel
+BuildRequires:	openldap-devel >= 2.6.9
 BuildRequires:	glib2-devel
+
+Requires:	openldap >= 2.6.9
 
 
 %description
