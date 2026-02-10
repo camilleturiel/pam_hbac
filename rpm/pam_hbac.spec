@@ -67,6 +67,17 @@ chmod 755 pam_hbac.so
 %doc README* COPYING* ChangeLog NEWS
 %{security_parent_dir}/security/pam_hbac.so
 
+%post
+# AIX: ensure LIBPATH includes /opt/freeware/lib for pam_hbac runtime deps
+if [ "$(uname -s)" = "AIX" ]; then
+    LIBPATH_LINE="LIBPATH=/opt/freeware/lib:/usr/lib"
+    if [ -f /etc/environment ]; then
+        if ! grep -q "^LIBPATH=.*\/opt\/freeware\/lib" /etc/environment; then
+            echo "$LIBPATH_LINE" >> /etc/environment
+        fi
+    fi
+fi
+
 %changelog
 * Fri Feb 06 2026 pam_hbac maintainers - 1.2-5.0
 - Rebuild for OpenLDAP 2.6.x on AIX 7.2/7.3
