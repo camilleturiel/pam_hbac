@@ -72,7 +72,7 @@ ph_getgrouplist_fallback(const char *name, gid_t primary_gid,
     endgrent();
 
     *ngroups_ptr = ngroups;
-    return ngroups;
+    return 0;
 }
 #endif
 
@@ -172,9 +172,16 @@ get_user_groups(pam_handle_t *ph,
 #if defined(HAVE_GETGROUPLIST)
     logger(ph, LOG_DEBUG, "running getgrouplist for %s\n", name);
     ret = getgrouplist(name, primary_gid, groups, ngroups_ptr);
+    if (ret == -1) {
+        /* Buffer was too small; ngroups_ptr is updated to required size */
+        logger(ph, LOG_NOTICE, "getgrouplist: buffer too small for %s\n", name);
+        return ERANGE;
+    }
+    ret = 0;
 #elif defined(HAVE__GETGROUPSBYMEMBER)
     int ngroups;
 
+    ret = -1;
     groups[0] = primary_gid;
     logger(ph, LOG_DEBUG, "running _getgroupsbymember for %s\n", name);
     ngroups = _getgroupsbymember(name, groups, *ngroups_ptr, 1);
@@ -251,8 +258,11 @@ get_user_int(pam_handle_t *ph,
 
     ngroups = maxgroups;    /* don't modify input parameter */
     ret = get_user_groups(ph, pwd.pw_name, pwd.pw_gid, gidlist, &ngroups);
-    if (ret == -1) {
+    if (ret != 0) {
         /* FIXME - resize on platforms where we allocate fewer groups? */
+        logger(ph, LOG_NOTICE,
+               "get_user_groups failed for %s [%d]: %s\n",
+               username, ret, strerror(ret));
         return NULL;
     }
 
@@ -280,7 +290,6 @@ ph_get_user(pam_handle_t *ph, const char *username)
                "Cannot get the value of _SC_NGROUPS_MAX, "
                "using fallback\n");
         maxgroups = FALLBACK_NGROUPS_MAX;
-        return NULL;
     }
 
     pu = get_user_int(ph, username, bufsize, maxgroups);
