@@ -394,6 +394,50 @@ ph_get_host(struct pam_hbac_ctx *ctx,
     return 0;
 }
 
+int
+ph_user_in_ldap(struct pam_hbac_ctx *ctx, const char *username)
+{
+    int ret;
+    char *user_filter;
+    struct ph_entry **users;
+    size_t num;
+    static const char *ph_user_attrs[] = { PAM_HBAC_ATTR_OC, "uid", NULL };
+    static struct ph_search_ctx user_search_obj = {
+        .sub_base = "cn=users,cn=accounts",
+        .oc = "posixAccount",
+        .attrs = ph_user_attrs,
+        .num_attrs = 2,
+    };
+
+    if (ctx == NULL || username == NULL) {
+        return EINVAL;
+    }
+
+    ret = asprintf(&user_filter, "uid=%s", username);
+    if (ret < 0) {
+        return ENOMEM;
+    }
+    logger(ctx->pamh, LOG_DEBUG,
+           "Checking if user %s exists in IPA LDAP\n", username);
+
+    ret = ph_search(ctx->pamh, ctx->ld, ctx->pc,
+                    &user_search_obj, user_filter, &users);
+    free(user_filter);
+    if (ret != 0) {
+        return ret;
+    }
+
+    num = ph_num_entries(users);
+    ph_entry_array_free(users);
+    if (num == 0) {
+        logger(ctx->pamh, LOG_NOTICE,
+               "User %s not found in IPA LDAP\n", username);
+        return ENOENT;
+    }
+    logger(ctx->pamh, LOG_DEBUG, "User %s found in IPA LDAP\n", username);
+    return 0;
+}
+
 /* FIXME - shouldn't we just merge get_svc and get_hosts? */
 int
 ph_get_svc(struct pam_hbac_ctx *ctx,

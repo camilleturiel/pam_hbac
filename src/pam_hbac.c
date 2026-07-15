@@ -371,6 +371,29 @@ pam_hbac(enum pam_hbac_actions action, pam_handle_t *pamh,
     }
     logger(pamh, LOG_DEBUG, "ph_get_user: OK");
 
+    /* Verify that the user exists in IPA LDAP.  Local-only users (e.g. AIX
+     * local accounts) are found by NSS above but have no IPA entry; with
+     * ignore_unknown_user we should skip them rather than running HBAC and
+     * returning PAM_PERM_DENIED (which AIX sshd maps to "account expired").
+     */
+    ret = ph_user_in_ldap(ctx, pi.pam_user);
+    if (ret == ENOENT) {
+        logger(pamh, LOG_NOTICE,
+               "User %s not found in IPA LDAP\n", pi.pam_user);
+        if (flags & PAM_IGNORE_UNKNOWN_USER_ARG) {
+            pam_ret = PAM_IGNORE;
+        } else {
+            pam_ret = PAM_USER_UNKNOWN;
+        }
+        goto done;
+    } else if (ret != 0) {
+        logger(pamh, LOG_ERR,
+               "ph_user_in_ldap error: %s", strerror(ret));
+        pam_ret = PAM_SYSTEM_ERR;
+        goto done;
+    }
+    logger(pamh, LOG_DEBUG, "ph_user_in_ldap: OK");
+
     /* Search hosts for fqdn = hostname (automatic or set from config file) */
     ret = ph_get_host(ctx, ctx->pc->hostname, &targethost);
     if (ret == ENOENT) {
