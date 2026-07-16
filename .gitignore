@@ -26,5 +26,8 @@ m4
 /depcomp
 /install-sh
 /missing
+
+# autotools aux dir (AC_CONFIG_AUX_DIR([build]))
+/build/
 .ycm_extra_conf.py
 .ycm_extra_conf.pyc
