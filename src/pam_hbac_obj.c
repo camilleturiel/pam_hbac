@@ -31,6 +31,9 @@
 #ifdef HAVE_STRINGS_H
 #include <strings.h>
 #endif
+#ifdef HAVE_USERSEC_H
+#include <usersec.h>
+#endif
 
 #include "pam_hbac.h"
 #include "pam_hbac_entry.h"
@@ -436,6 +439,62 @@ ph_user_in_ldap(struct pam_hbac_ctx *ctx, const char *username)
     }
     logger(ctx->pamh, LOG_DEBUG, "User %s found in IPA LDAP\n", username);
     return 0;
+}
+
+/*
+ * Decide whether a user that NSS already resolved is a purely local account
+ * (e.g. an AIX account in /etc/security/passwd) rather than an IPA/LDAP user.
+ * Local accounts are found by getpwnam_r/getgrset but have no IPA entry, so
+ * they must not be evaluated by HBAC.
+ *
+ * On AIX getuserattr() reports the registry that administers the account,
+ * which is the authoritative source and avoids an extra LDAP round-trip.
+ * On other platforms we fall back to an explicit IPA LDAP lookup.
+ */
+bool
+ph_user_is_local(struct pam_hbac_ctx *ctx, const char *username)
+{
+#ifdef HAVE_GETUSERATTR
+    char *registry = NULL;
+    bool is_local = false;
+
+    /* Bracket the lookup with setuserdb()/enduserdb(); enduserdb() releases
+     * the buffer returned for the SEC_CHAR value, so it is not freed here. */
+    setuserdb(S_READ);
+    if (getuserattr(discard_const(username), S_REGISTRY,
+                    &registry, SEC_CHAR) == 0 && registry != NULL) {
+        logger(ctx->pamh, LOG_DEBUG,
+               "User %s is administered by registry %s\n", username, registry);
+        /* IPA/LDAP users have registry "LDAP"; anything else (files, compat,
+         * ...) is a local account that pam_hbac should not handle. */
+        is_local = (strcmp(registry, "LDAP") != 0);
+    } else {
+        /* Could not determine the registry.  Do not misclassify the user as
+         * local; let the normal HBAC path run instead. */
+        logger(ctx->pamh, LOG_NOTICE,
+               "Cannot determine registry for user %s, assuming IPA user\n",
+               username);
+    }
+    enduserdb();
+
+    return is_local;
+#else
+    int ret;
+
+    ret = ph_user_in_ldap(ctx, username);
+    if (ret == 0) {
+        return false;           /* found in IPA LDAP */
+    } else if (ret == ENOENT) {
+        return true;            /* not in IPA LDAP -> local/unknown */
+    }
+
+    /* On a lookup error do not classify the user as local; let the caller
+     * proceed so a transient failure does not silently ignore an IPA user. */
+    logger(ctx->pamh, LOG_ERR,
+           "Could not verify user %s in IPA LDAP [%d]: %s\n",
+           username, ret, strerror(ret));
+    return false;
+#endif /* HAVE_GETUSERATTR */
 }
 
 /* FIXME - shouldn't we just merge get_svc and get_hosts? */
