@@ -103,9 +103,18 @@ int main(int argc, char *argv[])
                      || strcmp(argv[1], "--help") == 0)) {
         fprintf(stdout, "usage: %s [user] [service]\n"
                         "  defaults: user=%s service=%s\n"
+                        "  must be run as root\n"
                         "  exit code is the pam_acct_mgmt() return code\n",
                 argv[0], PAM_TEST_DFL_USER, PAM_TEST_DFL_SVC);
         return 0;
+    }
+
+    /* Account management reads privileged data (shadow/security databases and
+     * the module's LDAP bind credentials), so pam_acct_mgmt() only returns
+     * meaningful results as root.  Fail early with a clear message otherwise. */
+    if (getuid() != 0) {
+        fprintf(stderr, "%s: must be run as root\n", argv[0]);
+        return 1;
     }
 
     if (argc == 1) {
