@@ -397,31 +397,27 @@ ph_get_host(struct pam_hbac_ctx *ctx,
     return 0;
 }
 
-int
-ph_user_in_ldap(struct pam_hbac_ctx *ctx, const char *username)
+static int
+user_in_subtree(struct pam_hbac_ctx *ctx,
+                const char *sub_base,
+                const char *username)
 {
     int ret;
     char *user_filter;
     struct ph_entry **users;
     size_t num;
     static const char *ph_user_attrs[] = { PAM_HBAC_ATTR_OC, "uid", NULL };
-    static struct ph_search_ctx user_search_obj = {
-        .sub_base = "cn=users,cn=accounts",
+    struct ph_search_ctx user_search_obj = {
+        .sub_base = sub_base,
         .oc = "posixAccount",
         .attrs = ph_user_attrs,
         .num_attrs = 2,
     };
 
-    if (ctx == NULL || username == NULL) {
-        return EINVAL;
-    }
-
     ret = asprintf(&user_filter, "uid=%s", username);
     if (ret < 0) {
         return ENOMEM;
     }
-    logger(ctx->pamh, LOG_DEBUG,
-           "Checking if user %s exists in IPA LDAP\n", username);
 
     ret = ph_search(ctx->pamh, ctx->ld, ctx->pc,
                     &user_search_obj, user_filter, &users);
@@ -432,20 +428,67 @@ ph_user_in_ldap(struct pam_hbac_ctx *ctx, const char *username)
 
     num = ph_num_entries(users);
     ph_entry_array_free(users);
-    if (num == 0) {
+    return (num == 0) ? ENOENT : 0;
+}
+
+int
+ph_user_in_ldap(struct pam_hbac_ctx *ctx, const char *username)
+{
+    int ret;
+
+    if (ctx == NULL || username == NULL) {
+        return EINVAL;
+    }
+
+    logger(ctx->pamh, LOG_DEBUG,
+           "Checking if user %s exists in IPA LDAP\n", username);
+
+    /* Native IPA users live under cn=users,cn=accounts. */
+    ret = user_in_subtree(ctx, "cn=users,cn=accounts", username);
+    if (ret == ENOENT) {
+        /* AD trust users are not in cn=accounts; they are presented only
+         * through the compat tree.  HBAC applies to them, so they must be
+         * recognised as IPA users. */
+        ret = user_in_subtree(ctx, "cn=users,cn=compat", username);
+    }
+
+    if (ret == ENOENT) {
         logger(ctx->pamh, LOG_NOTICE,
                "User %s not found in IPA LDAP\n", username);
-        return ENOENT;
+    } else if (ret == 0) {
+        logger(ctx->pamh, LOG_DEBUG, "User %s found in IPA LDAP\n", username);
     }
-    logger(ctx->pamh, LOG_DEBUG, "User %s found in IPA LDAP\n", username);
-    return 0;
+    return ret;
 }
+
+#ifdef HAVE_GETUSERATTR
+/* AIX registries that administer purely local accounts.  A user backed by
+ * any other registry (LDAP, SSSD, KRB5LDAP, an AD trust, ...) is remote and
+ * must be evaluated by HBAC, so we match local ones explicitly rather than
+ * assuming everything that is not "LDAP" is local. */
+static const char *local_registries[] = { "files", "compat", NULL };
+
+static bool
+registry_is_local(const char *registry)
+{
+    size_t i;
+
+    for (i = 0; local_registries[i] != NULL; i++) {
+        if (strcmp(registry, local_registries[i]) == 0) {
+            return true;
+        }
+    }
+    return false;
+}
+#endif /* HAVE_GETUSERATTR */
 
 /*
  * Decide whether a user that NSS already resolved is a purely local account
- * (e.g. an AIX account in /etc/security/passwd) rather than an IPA/LDAP user.
- * Local accounts are found by getpwnam_r/getgrset but have no IPA entry, so
- * they must not be evaluated by HBAC.
+ * (e.g. an AIX account in /etc/security/passwd) rather than a user managed by
+ * IPA.  Local accounts are found by getpwnam_r/getgrset but have no IPA entry,
+ * so they must not be evaluated by HBAC.  Note that IPA-managed users include
+ * both native IPA users and AD trust users; only genuinely local accounts are
+ * treated as local here.
  *
  * On AIX getuserattr() reports the registry that administers the account,
  * which is the authoritative source and avoids an extra LDAP round-trip.
@@ -465,9 +508,7 @@ ph_user_is_local(struct pam_hbac_ctx *ctx, const char *username)
                     &registry, SEC_CHAR) == 0 && registry != NULL) {
         logger(ctx->pamh, LOG_DEBUG,
                "User %s is administered by registry %s\n", username, registry);
-        /* IPA/LDAP users have registry "LDAP"; anything else (files, compat,
-         * ...) is a local account that pam_hbac should not handle. */
-        is_local = (strcmp(registry, "LDAP") != 0);
+        is_local = registry_is_local(registry);
     } else {
         /* Could not determine the registry.  Do not misclassify the user as
          * local; let the normal HBAC path run instead. */
