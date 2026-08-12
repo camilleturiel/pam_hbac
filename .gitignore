@@ -11,7 +11,7 @@ config.log
 config.status
 *.o
 *.swp
-#pam_test_client
+/pam_test_client
 .deps
 .dirstamp
 stamp-h1
