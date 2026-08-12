@@ -81,6 +81,9 @@ explain_acct_result(int ret)
         return "not an IPA user, deferred to other modules (ignore_unknown_user)";
     case PAM_AUTHINFO_UNAVAIL:
         return "could not reach the IPA LDAP server";
+    case PAM_ACCT_EXPIRED:
+        return "account expired - from another stack module (pam_hbac never "
+               "returns this)";
     case PAM_ABORT:
     case PAM_SYSTEM_ERR:
         return "internal error";
