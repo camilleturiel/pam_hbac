@@ -7,7 +7,7 @@
 
 Name:           pam_hbac
 Version:	1.2
-Release:	5.0
+Release:	5.1
 Summary:	A PAM module that evaluates HBAC rules stored on an IPA server
 
 License:	GPLv3+
@@ -48,6 +48,12 @@ make %{?_smp_mflags}
 make install DESTDIR=$RPM_BUILD_ROOT
 find $RPM_BUILD_ROOT -name 'pam_hbac*' -type f 2>/dev/null || true
 rm -f $RPM_BUILD_ROOT%{security_parent_dir}/security/*.la
+# Ship the interactive test/diagnostic client.  automake builds it as a
+# noinst_PROGRAMS target (not installed by "make install"), so copy the
+# executable from the build dir into the package explicitly.
+mkdir -p $RPM_BUILD_ROOT%{_bindir}
+cp -p pam_test_client $RPM_BUILD_ROOT%{_bindir}/pam_test_client
+chmod 0755 $RPM_BUILD_ROOT%{_bindir}/pam_test_client
 # AIX libtool installs a .a archive containing the .so member — extract it
 cd $RPM_BUILD_ROOT%{security_parent_dir}/security
 ar -x pam_hbac.a
@@ -62,8 +68,12 @@ fi
 %defattr(-,root,root,-)
 %doc README* COPYING* ChangeLog NEWS
 %{security_parent_dir}/security/pam_hbac.so
+%{_bindir}/pam_test_client
 
 %changelog
+* Wed Aug 12 2026 pam_hbac maintainers - 1.2-5.1
+- Ship the pam_test_client diagnostic tool in the package
+
 * Fri Feb 06 2026 pam_hbac maintainers - 1.2-5.0
 - Rebuild for OpenLDAP 2.6.x on AIX 7.2/7.3
 - Link libldap/liblber by full path (pinned to /opt/freeware/lib)
