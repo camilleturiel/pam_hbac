@@ -60,12 +60,6 @@ AM_CHECK_POSIX_GETPWNAM
 AM_CHECK_POSIX_GETGRGID
 AC_CHECK_FUNCS(getgrouplist _getgroupsbymember getgrset)
 
-# AIX provides getuserattr() in <usersec.h> which reports the registry that
-# administers an account (e.g. "LDAP" vs "files").  When available it lets us
-# tell IPA/LDAP users apart from purely local accounts without an LDAP query.
-AC_CHECK_HEADERS([usersec.h])
-AC_CHECK_FUNCS([getuserattr])
-
 # Check if the compiler supports optional attributes
 CC_ATTRIBUTE_PRINTF
 

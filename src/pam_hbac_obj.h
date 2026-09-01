@@ -40,10 +40,6 @@ int ph_get_svc(struct pam_hbac_ctx *ctx,
                const char *svcname,
                struct ph_entry **_svc);
 
-int ph_user_in_ldap(struct pam_hbac_ctx *ctx, const char *username);
-
-bool ph_user_is_local(struct pam_hbac_ctx *ctx, const char *username);
-
 /* pam_hbac_eval_req.c */
 
 int ph_create_hbac_eval_req(struct ph_user *user,

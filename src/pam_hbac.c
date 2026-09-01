@@ -371,24 +371,6 @@ pam_hbac(enum pam_hbac_actions action, pam_handle_t *pamh,
     }
     logger(pamh, LOG_DEBUG, "ph_get_user: OK");
 
-    /* Local-only users (e.g. AIX local accounts) are found by NSS above but
-     * are not managed by IPA.  Skip them rather than running HBAC and
-     * returning PAM_PERM_DENIED (which AIX sshd maps to "account expired").
-     * On AIX this is decided by getuserattr(); elsewhere by an IPA LDAP
-     * lookup.
-     */
-    if (ph_user_is_local(ctx, pi.pam_user)) {
-        logger(pamh, LOG_NOTICE,
-               "User %s is not an IPA user\n", pi.pam_user);
-        if (flags & PAM_IGNORE_UNKNOWN_USER_ARG) {
-            pam_ret = PAM_IGNORE;
-        } else {
-            pam_ret = PAM_USER_UNKNOWN;
-        }
-        goto done;
-    }
-    logger(pamh, LOG_DEBUG, "ph_user_is_local: OK");
-
     /* Search hosts for fqdn = hostname (automatic or set from config file) */
     ret = ph_get_host(ctx, ctx->pc->hostname, &targethost);
     if (ret == ENOENT) {
